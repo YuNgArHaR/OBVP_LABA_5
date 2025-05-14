@@ -18,12 +18,13 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: |
-          pip install -r app/requirements.txt
+          pip install --upgrade pip
+          pip install -r requirements.txt
           pip install pytest httpx
       - name: Create static directory
-        run: mkdir -p app/static && touch app/static/index.html
+        run: mkdir -p static && touch static/index.html
       - name: Run tests
-        run: pytest app/test_prod.py -v
+        run: pytest test_prod.py -v
 
 
   build:
