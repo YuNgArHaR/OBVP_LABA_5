@@ -9,5 +9,6 @@ pytest
 python-multipart
 pydantic
 fastapi
-jwt
 pyjwt
+pyjwt[crypto]
+passlib[bcrypt]
