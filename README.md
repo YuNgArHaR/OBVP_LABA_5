@@ -33,4 +33,4 @@ pip install "fastapi[standard]"
 - `pip install -r requirements.txt`
 - `fastapi dev main.py` или `python -m fastapi dev main.py  `
 
-## ИСАКОВ ДАНИИЛ, ИСП-421р
+## ИСАКОВ ДАНИИЛ, ИСП-421Р
