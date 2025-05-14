@@ -1,60 +1,29 @@
-name: Run Tests
+name: Test and Build
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - '*'
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: isp_r_Isakov
-          MYSQL_USER: isp_r_Isakov
-          MYSQL_PASSWORD: 12345
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
-      - name: Установка зависимостей
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install httpx
-        
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout репозитория
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
+    - name: Установка Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install fastapi sqlalchemy pytest pymysql passlib bcrypt python-jose[cryptography]
+    - name: Установка зависимостей
+      run: |
+        python -m pip install --upgrade pip
+        pip install fastapi pytest httpx
 
-      - name: Wait for MySQL to be ready
-        run: |
-          echo "Waiting for MySQL to be healthy..."
-          sleep 20
-
-      - name: Run tests
-        run: |
-          pytest test_prod.py
+    - name: Запуск тестов
+      run: |
+        pytest samDeLaL.py test_prod.py
