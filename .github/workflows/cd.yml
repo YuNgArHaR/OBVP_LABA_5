@@ -6,8 +6,6 @@ on:
     # указываем что при пуще в ветку main, будет запускаться
     branches: ["docker"]
 
-
-# переменные окружения
 env:
   # реестр образов GitHub Container Registry (GHCR).
   REGISTRY: ghcr.io
