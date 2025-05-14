@@ -1,95 +1,54 @@
-# Название нашего процесса
-name: Continuous Deployment - test
-# Тригер
+name: Run Tests
+
 on:
   push:
-    # указываем что при пуще в ветку main, будет запускаться
-    branches: ["docker"]
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - main
 
-
-# переменные окружения
-env:
-  # реестр образов GitHub Container Registry (GHCR).
-  REGISTRY: ghcr.io
-  # название образа, совпадающее с именем репозитория.
-  IMAGE_NAME: ${{ github.repository }}
-
-
-# задачи
 jobs:
-  # как нибудь называем
-  build-and-push-image:
+  test:
     runs-on: ubuntu-latest
-    permissions:
-      # read — доступ к содержимому репозитория.
-      contents: read
-      # write — право публиковать контейнеры в GHCR.
-      packages: write
-      # write — право подписывать контейнеры (не используется явно, но может быть для безопасности).
-      attestations: write
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: isp_r_Isakov
+          MYSQL_USER: isp_r_Isakov
+          MYSQL_PASSWORD: 12345
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
-    # шаги для задачи
     steps:
-      # Клонирует код в CI/CD среду.
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-
-      # Авторизация в GitHub Container Registry (GHCR)
-      - name: Log in to the Container registry
-        # надеюсь с версией проблем не будет
-        uses: docker/login-action@v3.3.0
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          # Логинится в GHCR под текущим пользователем.
-          # Использует GITHUB_TOKEN для аутентификации.
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          python-version: "3.10"
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi sqlalchemy pytest pymysql passlib bcrypt python-jose[cryptography]
 
-      # Извлечение метаданных образа
-      # Генерирует теги и лейблы для Docker-образа.
-      # Записывает их в steps.meta.outputs.tags и steps.meta.outputs.labels.
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5.6.1
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Wait for MySQL to be ready
+        run: |
+          echo "Waiting for MySQL to be healthy..."
+          sleep 20
 
-
-      # Сборка и загрузка Docker-образа
-      - name: Build and push Docker image
-        id: push
-        uses: docker/build-push-action@v6
-        with:
-          # Собирает Docker-образ из текущей директории (context: .).
-          # Пушит образ в GitHub Container Registry.
-          # Использует метаданные для тегов и лейблов.
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-#      дальше по желанию пушим на удалённый сервер, его у нас конечно же нет
-# - name: Install SSH client
-#   run: sudo apt-get update && sudo apt-get install -y openssh-client
-
-
-# - name: Deploy to VM
-#   env:
-#     SSH_HOST: ${{ vars.SSH_HOST }}
-#     SSH_USER: ${{ secrets.SSH_USER }}
-#     SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
-#     IMAGE_TAG: ${{ steps.meta.outputs.tags }}
-#   run: |
-#     echo "${{ env.SERVER_SSH_KEY }}" > key.pem
-#     chmod 600 key.pem
-#     ssh -i key.pem -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << 'EOF'
-#       docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.MY_PERSONAL_PAT }}
-#       docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-#       cd ~
-#       docker compose down frontend
-#       docker compose up -d frontend
-#     EOF
-# Clean up the private key.pem
-# rm key.pem
+      - name: Run tests
+        run: |
+          pytest samDeLaL.py test_prod.py
